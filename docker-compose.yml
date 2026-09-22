@@ -1,0 +1,129 @@
+services:
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "${PROXY_PORT:-80}:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    networks:
+      - secubrief
+    depends_on:
+      - frontend
+      - backend
+
+  frontend:
+    image: node:20-slim
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm install && npm run dev"
+    networks:
+      - secubrief
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    restart: unless-stopped
+    environment:
+      - DB_PASSWORD_FILE=/run/secrets/db_password
+      - JWT_SECRET_FILE=/run/secrets/jwt_secret
+      - NAVER_CLIENT_SECRET_FILE=/run/secrets/naver_client_secret
+      - ADMIN_INITIAL_PASSWORD_FILE=/run/secrets/admin_initial_password
+    secrets:
+      - db_password
+      - jwt_secret
+      - naver_client_secret
+      - admin_initial_password
+    command: ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    networks:
+      - secubrief
+    depends_on:
+      db:
+        condition: service_healthy
+
+  collector:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    restart: unless-stopped
+    environment:
+      - BATCH_TIMES=${BATCH_TIMES:-09:00,21:00}
+      - DB_PASSWORD_FILE=/run/secrets/db_password
+      - JWT_SECRET_FILE=/run/secrets/jwt_secret
+      - NAVER_CLIENT_SECRET_FILE=/run/secrets/naver_client_secret
+      - ADMIN_INITIAL_PASSWORD_FILE=/run/secrets/admin_initial_password
+    secrets:
+      - db_password
+      - jwt_secret
+      - naver_client_secret
+      - admin_initial_password
+    command: ["python", "-m", "collector.main"]
+    networks:
+      - secubrief
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    build:
+      context: .
+      dockerfile: Dockerfile.db
+    restart: unless-stopped
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    shm_size: 1gb
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
+      - POSTGRES_DB=postgres
+    secrets:
+      - db_password
+    volumes:
+      - ./db_data:/var/lib/postgresql/data
+      - ./db/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - secubrief
+
+  translator:
+    build:
+      context: .
+      dockerfile: Dockerfile.translator
+    profiles: ["batch"]
+    cpuset: "0-3,8-11" # 4워커 배치
+    environment:
+      - DB_PASSWORD_FILE=/run/secrets/db_password
+      - OMP_NUM_THREADS=2
+      - MKL_NUM_THREADS=2
+    secrets:
+      - db_password
+    command: ["python", "-m", "translator.main"]
+    networks:
+      - secubrief
+    # S-14: 워커 4개가 각각 GPU 2장을 쓰는 구성 (0+1 / 2+3 / 4+5 / 6+7). 
+    # 실제 4개 서비스 정의는 SPEC-004에서. 여기서는 translator 1개 예시.
+    # S-15: NUMA 그룹(0~3 / 4~7) 경계를 넘는 짝을 쓰지 마라.
+    # devices 속성에 CDI 방식 지정.
+    devices:
+      - nvidia.com/gpu=0
+      - nvidia.com/gpu=1
+
+networks:
+  secubrief:
+    name: secubrief
+
+secrets:
+  db_password:
+    file: ./secrets/db_password
+  jwt_secret:
+    file: ./secrets/jwt_secret
+  naver_client_secret:
+    file: ./secrets/naver_client_secret
+  admin_initial_password:
+    file: ./secrets/admin_initial_password

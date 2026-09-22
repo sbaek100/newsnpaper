@@ -1,11 +1,17 @@
 import os
 from pydantic_settings import BaseSettings
+from shared.logging import get_logger, mask_dict
 
-def read_secret(file_path: str) -> str:
+logger = get_logger("config")
+
+def read_secret(file_path: str, secret_name: str) -> str:
     if not os.path.isfile(file_path):
         raise FileNotFoundError(f"Secret file not found: {file_path}")
     with open(file_path, "r", encoding="utf-8") as f:
-        return f.read().strip()
+        content = f.read().strip()
+    if not content:
+        logger.warning(f"Secret file is empty: {file_path}")
+    return content
 
 class Settings(BaseSettings):
     compose_project_name: str = "secubrief"
@@ -22,6 +28,8 @@ class Settings(BaseSettings):
     translator_dtype: str = "fp16"
     translator_workers: int = 4
     translator_gpus_per_worker: int = 2
+    
+    collector_workers: int = 8
     
     # Secrets
     db_password: str = ""
@@ -41,26 +49,24 @@ class Settings(BaseSettings):
     db_name: str = "postgres"
 
     def model_post_init(self, __context):
-        # DB Password
         if self.db_password_file:
-            self.db_password = read_secret(self.db_password_file)
+            self.db_password = read_secret(self.db_password_file, "db_password")
         elif not self.db_password:
             raise ValueError("db_password or db_password_file must be provided")
 
-        # JWT Secret
         if self.jwt_secret_file:
-            self.jwt_secret = read_secret(self.jwt_secret_file)
+            self.jwt_secret = read_secret(self.jwt_secret_file, "jwt_secret")
         elif not self.jwt_secret:
             raise ValueError("jwt_secret or jwt_secret_file must be provided")
 
-        # Optional or empty external secrets might be allowed if we just need to run services
-        if self.naver_client_secret_file and os.path.isfile(self.naver_client_secret_file):
-            with open(self.naver_client_secret_file, "r", encoding="utf-8") as f:
-                self.naver_client_secret = f.read().strip()
+        if self.naver_client_secret_file:
+            self.naver_client_secret = read_secret(self.naver_client_secret_file, "naver_client_secret")
         
-        if self.admin_initial_password_file and os.path.isfile(self.admin_initial_password_file):
-            with open(self.admin_initial_password_file, "r", encoding="utf-8") as f:
-                self.admin_initial_password = f.read().strip()
+        if self.admin_initial_password_file:
+            self.admin_initial_password = read_secret(self.admin_initial_password_file, "admin_initial_password")
+
+    def safe_dump(self):
+        return mask_dict(self.model_dump())
 
     class Config:
         env_file = ".env"
