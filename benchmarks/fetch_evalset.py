@@ -146,7 +146,9 @@ def fetch_papers(count=5):
                     "id": f"arxiv-{arxiv_id}",
                     "source_url": f"https://arxiv.org/abs/{arxiv_id}",
                     "text": text,
-                    "truncated": is_intro_trunc or is_conc_trunc
+                    "truncated": is_intro_trunc or is_conc_trunc,
+                    "intro_original_len": len(intro),
+                    "conc_original_len": len(conc)
                 })
                 print(f"Successfully extracted {arxiv_id}")
             else:

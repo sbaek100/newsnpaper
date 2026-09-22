@@ -48,22 +48,24 @@ def get_call_distribution(total_calls):
         "paper_conclusion": paper_c
     }
 
+from pathlib import Path
+
 def load_fixtures():
-    base = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(base, "fixtures", "news_titles.json")) as f:
+    base = Path(__file__).parent
+    with open(base / "fixtures" / "news_titles.json") as f:
         news_titles = json.load(f)
-    with open(os.path.join(base, "fixtures", "news_summaries.json")) as f:
+    with open(base / "fixtures" / "news_summaries.json") as f:
         news_summaries = json.load(f)
-    with open(os.path.join(base, "fixtures", "paper_titles.json")) as f:
+    with open(base / "fixtures" / "paper_titles.json") as f:
         paper_titles = json.load(f)
-    with open(os.path.join(base, "fixtures", "paper_sections.json")) as f:
+    with open(base / "fixtures" / "paper_sections.json") as f:
         paper_sections = json.load(f)
         
     abstracts = [s['text'] for s in paper_sections if s['name'] == 'Abstract']
     intros = [s['text'] for s in paper_sections if s['name'] == 'Introduction']
     conclusions = [s['text'] for s in paper_sections if s['name'] == 'Conclusion']
     
-    with open(os.path.join(base, "glossary.json")) as f:
+    with open(base / "glossary.json") as f:
         glossary = json.load(f)["glossary"]
         
     return news_titles, news_summaries, paper_titles, abstracts, intros, conclusions, glossary
