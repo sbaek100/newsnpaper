@@ -1,0 +1,32 @@
+# Stage 1: Build pg_bigm
+FROM postgres:16 AS builder
+
+# pg_bigm version v1.2-20250903
+ENV PG_BIGM_VERSION=1.2-20250903
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    postgresql-server-dev-16 \
+    ca-certificates \
+    curl \
+    libicu-dev
+
+RUN curl -L -o pg_bigm.tar.gz "https://github.com/pgbigm/pg_bigm/archive/refs/tags/v${PG_BIGM_VERSION}.tar.gz" \
+    && tar -xzf pg_bigm.tar.gz \
+    && cd "pg_bigm-${PG_BIGM_VERSION}" \
+    && make USE_PGXS=1 \
+    && make USE_PGXS=1 install
+
+# Stage 2: Final image
+FROM postgres:16
+
+# Copy pg_bigm extension files from builder
+COPY --from=builder /usr/lib/postgresql/16/lib/pg_bigm.so /usr/lib/postgresql/16/lib/
+COPY --from=builder /usr/share/postgresql/16/extension/pg_bigm* /usr/share/postgresql/16/extension/
+
+# Initialize pg_bigm on startup
+RUN echo "CREATE EXTENSION IF NOT EXISTS pg_bigm;" > /docker-entrypoint-initdb.d/01-pg_bigm.sql
+
+# Encoding and locale settings
+ENV POSTGRES_INITDB_ARGS="--encoding=UTF8 --locale=C.UTF-8"
+ENV LANG="C.UTF-8"

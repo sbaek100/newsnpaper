@@ -8,11 +8,13 @@ import xml.etree.ElementTree as ET
 from pypdf import PdfReader
 import re
 import io
+from pathlib import Path
 
-EVALSET_DIR = "benchmarks/evalset"
-PAPERS_JSON = os.path.join(EVALSET_DIR, "papers.json")
-NEWS_JSON = os.path.join(EVALSET_DIR, "news.json")
-PDF_DIR = "benchmarks/papers_pdf"
+BASE_DIR = Path(__file__).parent
+EVALSET_DIR = BASE_DIR / "evalset"
+PAPERS_JSON = EVALSET_DIR / "papers.json"
+NEWS_JSON = EVALSET_DIR / "news.json"
+PDF_DIR = BASE_DIR / "papers_pdf"
 
 def fetch_news(count=15):
     feeds = [
@@ -39,6 +41,17 @@ def fetch_news(count=15):
         if len(news_items) >= count:
             break
     return news_items
+
+def truncate_section(text, max_len=8000):
+    if len(text) <= max_len:
+        return text, False
+    
+    truncated = text[:max_len]
+    last_period = truncated.rfind('. ')
+    if last_period != -1:
+        truncated = truncated[:last_period + 1]
+    
+    return truncated + " …(생략)", True
 
 def extract_sections(pdf_path):
     try:
@@ -125,11 +138,15 @@ def fetch_papers(count=5):
                 os.remove(pdf_path)
                 
             if intro and conc:
-                text = f"Title: {title}\n\nAbstract: {abstract}\n\nIntroduction: {intro[:2000]}...\n\nConclusion: {conc[:2000]}..."
+                intro_trunc, is_intro_trunc = truncate_section(intro)
+                conc_trunc, is_conc_trunc = truncate_section(conc)
+                
+                text = f"Title: {title}\n\nAbstract: {abstract}\n\nIntroduction: {intro_trunc}\n\nConclusion: {conc_trunc}"
                 papers.append({
                     "id": f"arxiv-{arxiv_id}",
                     "source_url": f"https://arxiv.org/abs/{arxiv_id}",
-                    "text": text
+                    "text": text,
+                    "truncated": is_intro_trunc or is_conc_trunc
                 })
                 print(f"Successfully extracted {arxiv_id}")
             else:

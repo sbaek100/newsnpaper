@@ -19,12 +19,13 @@ def load_glossary():
 
 def check_anomalies(original, translated, glossary):
     anomalies = {}
+    critical_anomalies = {}
     
-    # format_fail: < 30% Korean characters
+    # format_fail: < 45% Korean characters
     kr_chars = len(re.findall(r'[가-힣]', translated))
     total_chars = len(re.sub(r'\s+', '', translated))
-    if total_chars > 0 and (kr_chars / total_chars) < 0.3:
-        anomalies["format_fail"] = True
+    if total_chars > 0 and (kr_chars / total_chars) < 0.45:
+        critical_anomalies["format_fail"] = {"index": 0, "context": "ratio < 45%"}
         
     # length_anomaly
     if len(translated) < 0.3 * len(original) or len(translated) > 3 * len(original):
@@ -44,8 +45,51 @@ def check_anomalies(original, translated, glossary):
             misses.append(g['en'])
     if misses:
         anomalies["glossary_miss"] = misses
-        
-    return anomalies
+
+    # F-6: cjk_contamination
+    cjk_match = re.search(r'[\u4e00-\u9fff]', translated)
+    if cjk_match:
+        idx = cjk_match.start()
+        context = translated[max(0, idx-40):min(len(translated), idx+41)]
+        critical_anomalies["cjk_contamination"] = {"index": idx, "context": context}
+
+    # F-7: cyrillic_contamination
+    cyrillic_match = re.search(r'[\u0400-\u04ff]', translated)
+    if cyrillic_match:
+        idx = cyrillic_match.start()
+        context = translated[max(0, idx-40):min(len(translated), idx+41)]
+        critical_anomalies["cyrillic_contamination"] = {"index": idx, "context": context}
+
+    # F-8: mojibake
+    mojibake_match = re.search(r'[\ufffd]', translated)
+    if mojibake_match:
+        idx = mojibake_match.start()
+        context = translated[max(0, idx-40):min(len(translated), idx+41)]
+        critical_anomalies["mojibake"] = {"index": idx, "context": context}
+
+    # F-9: repetition (same 30+ char sentence repeated 3 times)
+    repetition = None
+    for i in range(len(translated) - 30):
+        substr = translated[i:i+30]
+        first_idx = translated.find(substr)
+        if first_idx == i:
+            second_idx = translated.find(substr, first_idx + 30)
+            if second_idx != -1:
+                third_idx = translated.find(substr, second_idx + 30)
+                if third_idx != -1:
+                    idx = third_idx
+                    context = translated[max(0, idx-40):min(len(translated), idx+41)]
+                    repetition = {"index": idx, "context": context}
+                    break
+    if repetition:
+        critical_anomalies["repetition"] = repetition
+
+    # Merge for return, or return tuple? Wait, F-11 says: 
+    # "이 4종은 치명(critical)으로 분류하고, 요약에서 일반 이상과 구분해 표시한다"
+    # So I can return a dictionary with both, maybe nested?
+    # Or return both. Wait, I should change how `anomalies` are accumulated.
+    # Let's just put all in one dictionary but structured.
+    return anomalies, critical_anomalies
 
 def generate_prompt(text, glossary):
     glossary_lines = []

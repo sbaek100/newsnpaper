@@ -102,6 +102,100 @@ PDF 원본 보관 여부는 미결(§7).
 상시 기동하지 않는다. 이 서버는 다른 실험에도 쓰이므로 GPU를 하루 종일 점유할 수 없다.
 모델 로딩 비용(회당 1~2분)은 하루 2회면 무시할 만하다 (PRD-03 FR-43).
 
+## 4.5 🔴 CPU 활용 정책 (2026-09-23 신설)
+
+사용자 지시 — **"번역 외에 업무에서 CPU를 최대로 활용"**.
+
+### 4.5.1 하드웨어
+
+| 항목 | 값 |
+|---|---|
+| CPU | Xeon E5-2623 v3 × 2 — **8 물리 코어 / 16 스레드** |
+| NUMA | node0 = CPU `0-3,8-11` (GPU 0~3) · node1 = CPU `4-7,12-15` (GPU 4~7) |
+| RAM | 125GB (가용 약 120GB) |
+
+**물리 코어가 8개뿐이다.** 무작정 스레드를 늘리면 컨텍스트 스위칭으로 손해다.
+작업 성격에 따라 물리 코어 수(8)와 논리 스레드 수(16)를 구분해 쓴다.
+
+### 4.5.2 단계가 시간적으로 분리된다 — 그래서 각 단계가 CPU를 독점할 수 있다
+
+```
+배치 1회 (09:00 / 21:00)
+ [1] 수집    네트워크 I/O + PDF 파싱   → CPU 최대 활용 (GPU 유휴)
+ [2] 번역    GPU 바운드                → CPU는 급식용 최소 (CPU 유휴에 가까움)
+ [3] 색인    생성 컬럼 + GIN 빌드      → CPU 병렬 (GPU 유휴)
+```
+
+수집과 번역이 **동시에 돌지 않으므로** 서로 CPU를 뺏지 않는다.
+
+### 4.5.3 수집 (`collector`) — CPU 최대
+
+| ID | 요구사항 |
+|---|---|
+| C-1 | 네트워크 수집은 **비동기 I/O**(`httpx` + `asyncio`)로 한다. 스레드를 늘려도 I/O 대기라 이득이 없다 |
+| C-2 | 소스별 rate limit을 지킨다 — **arXiv는 호출 간 3초 이상**. 동시성으로 이를 깨지 마라 |
+| C-3 | **PDF 텍스트 추출·섹션 휴리스틱은 `multiprocessing.Pool`로 병렬화**한다. 이게 수집 단계의 최대 CPU 소비처다 |
+| C-4 | 풀 크기는 **물리 코어 수 8**을 기본으로 하고 `.env`의 `COLLECTOR_WORKERS`로 조정 가능하게 한다. PyMuPDF는 메모리 대역 바운드라 하이퍼스레딩 이득이 작다 |
+| C-5 | dedup의 URL 정규화·해싱도 같은 풀에서 처리한다 |
+| C-6 | 프로세스 풀을 배치마다 새로 만들지 말고 재사용한다 (fork 비용) |
+
+### 4.5.4 DB (`db`) — RAM 125GB를 쓴다
+
+기본 PostgreSQL 설정은 수백 MB 메모리를 전제한다. **이 서버에서는 심하게 낭비다.**
+
+| 설정 | 값 | 근거 |
+|---|---|---|
+| `shared_buffers` | **32GB** | RAM의 약 25% |
+| `effective_cache_size` | **80GB** | 플래너에게 OS 캐시를 알려준다 |
+| `work_mem` | **256MB** | 정렬·해시. 동시 질의가 적다 |
+| `maintenance_work_mem` | **4GB** | **GIN 인덱스 빌드가 여기 걸린다** |
+| `max_worker_processes` | **16** | 논리 스레드 수 |
+| `max_parallel_workers` | **8** | 물리 코어 수 |
+| `max_parallel_workers_per_gather` | **4** | 단일 질의당 |
+| `max_parallel_maintenance_workers` | **4** | 인덱스 빌드 병렬 |
+| `random_page_cost` | **1.1** | SSD |
+
+| ID | 요구사항 |
+|---|---|
+| C-7 | 위 설정을 `db/postgresql.conf` 로 두고 Compose에서 마운트한다. 이미지에 굽지 마라 |
+| C-8 | `pg_bigm` GIN 인덱스 빌드 시 `maintenance_work_mem`이 실제로 적용되는지 확인한다 |
+
+### 4.5.5 번역 (`translator`) — CPU를 적게, 대신 NUMA를 맞춘다
+
+번역은 **GPU 바운드**다. CPU 스레드를 늘리면 스핀만 늘고 이득이 없다.
+대신 **NUMA 정합**이 실제 이득을 준다 — GPU가 NUMA 노드에 묶여 있으므로
+CPU도 같은 노드에 고정해야 PCIe 전송이 호스트 메모리를 가로지르지 않는다.
+
+| 워커 | GPU | NUMA | CPU 바인딩 |
+|---|---|---|---|
+| `translator-0` | 0,1 | node0 | `0-3,8-11` |
+| `translator-1` | 2,3 | node0 | `0-3,8-11` |
+| `translator-2` | 4,5 | node1 | `4-7,12-15` |
+| `translator-3` | 6,7 | node1 | `4-7,12-15` |
+
+| ID | 요구사항 |
+|---|---|
+| C-9 | 워커당 `OMP_NUM_THREADS=2`, `MKL_NUM_THREADS=2` 로 제한한다 (4워커 × 2 = 8스레드) |
+| C-10 | 워커를 **GPU와 같은 NUMA 노드에 CPU 바인딩**한다 (`numactl --cpunodebind` 또는 Compose `cpuset`) |
+| C-11 | 토크나이저는 CPU를 쓰므로 배치 단위로 묶어 호출 오버헤드를 줄인다 |
+
+### 4.5.6 빌드·프론트엔드
+
+| ID | 요구사항 |
+|---|---|
+| C-12 | `docker compose build --parallel` 로 이미지를 병렬 빌드한다 |
+| C-13 | `Dockerfile.db`의 `pg_bigm` 컴파일에 `make -j$(nproc)` 를 쓴다 |
+| C-14 | Vite 빌드는 esbuild가 자동 병렬화한다. 별도 설정 불필요 |
+
+### 4.5.7 하지 말 것
+
+| 금지 | 이유 |
+|---|---|
+| 번역 워커 수를 CPU 기준으로 늘리기 | GPU가 병목이다. 워커 수는 VRAM이 정한다 (§4) |
+| 수집 동시성으로 rate limit 깨기 | arXiv 차단을 부른다 (C-2) |
+| `shared_buffers`를 RAM의 40% 이상으로 | OS 캐시와 이중 캐싱이 되어 오히려 느려진다 |
+| 수집과 번역을 동시 실행 | CPU·메모리 경합. 순차 실행이 설계다 (§4.5.2) |
+
 ## 5. GPU 하드 제약 (변경 불가)
 
 - NVIDIA TITAN Xp × 8 (각 12GB, **Pascal sm_61**), Docker GPU 패스스루 동작 확인됨
@@ -134,9 +228,9 @@ PRD-04 §10(논문 상세)과 PRD-06(검색 결과·목록)이 확정되면서 *
 
 | 서비스 | 스택 |
 |---|---|
-| `backend` | **Python 3.11 + FastAPI + SQLAlchemy 2.0 + Pydantic v2** |
-| `collector` | Python 3.11 (`httpx`, `feedparser`, `PyMuPDF`) + APScheduler |
-| `translator` | Python 3.11 + PyTorch 2.6 + Transformers |
+| `backend` | **Python 3.11 + FastAPI + SQLAlchemy 2.0 (async) + asyncpg + Pydantic v2** |
+| `collector` | Python 3.11 (`httpx` async, `feedparser`, `PyMuPDF`) + APScheduler(Async) |
+| `translator` | Python 3.11 + PyTorch 2.6 + Transformers (큐 I/O만 async) |
 | `db` | PostgreSQL 16 + `pg_bigm` (커스텀 이미지) |
 | `frontend` | React 18 + Vite 5 + **react-router-dom 6** |
 
@@ -149,6 +243,35 @@ PRD-04 §10(논문 상세)과 PRD-06(검색 결과·목록)이 확정되면서 *
 |---|---|
 | A-1 | `backend`·`collector`·`translator`는 공통 `shared/` 패키지(모델·설정·DB 세션)를 공유한다 |
 | A-2 | `translator`만 CUDA 베이스 이미지를 쓰고, 나머지는 slim 이미지를 쓴다 |
+
+### 7.1.1 🔴 전면 async (2026-09-23 지시)
+
+사용자 지시 — **"모든 시스템은 async로"**.
+
+| 대상 | 방식 |
+|---|---|
+| `backend` 엔드포인트 | `async def`. 동기 핸들러를 쓰지 마라 |
+| DB 접근 | **SQLAlchemy 2.0 async + `asyncpg`.** `create_async_engine` / `AsyncSession` |
+| 외부 HTTP (수집) | `httpx.AsyncClient`. `requests`를 쓰지 마라 |
+| 스케줄러 | `AsyncIOScheduler` (APScheduler) |
+| 번역 큐 I/O | async — job 집기·상태 갱신 |
+
+| ID | 요구사항 |
+|---|---|
+| A-5 | 모든 I/O 경로를 async로 구현한다. 동기 드라이버(`psycopg2`, `requests`)를 쓰지 마라 |
+| A-6 | 🔴 **이벤트 루프를 막는 CPU 작업은 `run_in_executor`로 내보낸다.** PDF 파싱·섹션 휴리스틱이 해당한다 (§4.5.3). 루프에서 직접 돌리면 async의 의미가 사라진다 |
+| A-7 | **PyTorch 추론은 동기다.** async로 감싸도 빨라지지 않는다. 워커는 추론을 동기로 하되, 큐 I/O만 async로 한다. 억지로 async 추론을 만들지 마라 |
+| A-8 | 블로킹 호출을 발견하면 감추지 말고 보고한다 |
+
+### 7.1.2 최종 결과 값 위주
+
+사용자 지시 — **"최종 결과 값 위주로 만들어 내고, 품질만 좋으면 되"**.
+
+| ID | 요구사항 |
+|---|---|
+| A-9 | 서버가 **완성된 값**을 내려준다. 클라이언트가 조합·분기하게 만들지 마라 — `titleDisplay`/`summaryDisplay`가 그 예다 (PRD-03 FR-30~32) |
+| A-10 | 중간 상태(`translation_status`, `sectionExtractStatus`)는 **표시에 필요한 것만** 내려준다. 클라이언트가 이를 보고 분기하는 구조를 만들지 마라 |
+| A-11 | 성능 최적화보다 **정확성과 품질**을 우선한다. 캐시·비정규화는 측정된 병목에만 적용한다 |
 
 ### 7.2 컨테이너 이미지
 
@@ -249,10 +372,14 @@ translator  PyTorch ×4       —      (배치 시각에만 기동, GPU 2장씩)
 | `type` | `news` \| `paper` | 전체 |
 | `category` | `international` \| `domestic` \| `paper` | 전체 |
 | `kw` | `matchedKeywords` 다중(OR), 쉼표 구분 | — |
-| `sort` | `relevance` \| `recent` | `q` 있으면 relevance, 없으면 recent |
+| `sort` | `recent` \| `relevance` | **항상 `recent`(최신순)** — 2026-09-23 지시 |
 | `page` / `size` | 페이지 번호 / 건수 | 1 / 20 |
 
 응답: `{ items: [...], total, page, size, appliedScope }`
+
+> 🔴 **기본 정렬은 어디서나 최신순(`collected_at DESC`)이다** (2026-09-23 지시:
+> "게시물의 나열 순서는 최신순으로 나열하면 되"). 검색 결과도 마찬가지다.
+> `relevance`는 사용자가 명시적으로 전환할 때만 쓰는 선택지다.
 `appliedScope`는 검색 범위 표기용이다 (PRD-05 FR-17, PRD-06 FR-10).
 
 인증 API는 PRD-01 §7, 관리자 API도 같은 표에 있다.
