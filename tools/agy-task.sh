@@ -118,6 +118,42 @@ set -e
   echo "exit code: $RC"
 } >> "$LOG"
 
+# ── 조기 종료 탐지 ────────────────────────────────────────────────
+# agy는 오래 걸리는 작업을 자기 내부 백그라운드 태스크로 띄운 뒤
+# 몇 초 기다리다 세션을 끝내면서 자식 프로세스를 같이 죽인다.
+# --timeout 은 agy CLI 호출의 타임아웃일 뿐 이걸 막지 못한다.
+# exit 0 이어도 실제로는 일을 안 끝낸 것이므로 반드시 잡아낸다.
+WARN=0
+
+if grep -qiE "terminating [0-9]+ background task|background task\(s\) on exit" "$LOG" 2>/dev/null; then
+  WARN=1
+  echo "⚠️  agy가 백그라운드 태스크를 죽이며 조기 종료했다" | tee -a "$LOG"
+fi
+
+if grep -qiE "no output produced|auto-denied|permission that headless mode cannot prompt" "$LOG" 2>/dev/null; then
+  WARN=1
+  echo "⚠️  권한 거부로 도구 호출이 막혔다 — settings.json의 permissions.allow 확인" | tee -a "$LOG"
+fi
+
+if ! grep -q "CHANGED:" "$LOG" 2>/dev/null; then
+  WARN=1
+  echo "⚠️  agy가 요구된 보고 형식(CHANGED/SUMMARY)을 내지 않았다 — 작업 미완 가능성" | tee -a "$LOG"
+fi
+
+# agy CLI 자체 로그에서 같은 시간대의 조기 종료 흔적을 본다
+AGYLOG="$HOME/.gemini/antigravity-cli/cli.log"
+if [[ -r "$AGYLOG" ]] && tail -300 "$AGYLOG" | grep -qiE "terminating [0-9]+ background task"; then
+  WARN=1
+  echo "⚠️  agy cli.log에 백그라운드 태스크 강제 종료 기록이 있다" | tee -a "$LOG"
+fi
+
+DUR=$SECONDS
+echo "소요: ${DUR}초" | tee -a "$LOG"
+
 echo
 echo "--- 로그: $LOG (exit $RC) ---"
+if [[ $WARN -eq 1 ]]; then
+  echo "--- 🔴 조기 종료/미완 의심: 산출물을 직접 확인할 것 (exit 90) ---"
+  exit 90
+fi
 exit "$RC"
