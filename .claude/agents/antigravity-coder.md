@@ -59,3 +59,12 @@ tools/agy-task.sh <명세파일 또는 -> [--model MODEL] [--dir 추가디렉토
 - 수집된 뉴스·논문 본문을 `agy` 프롬프트에 넣지 마라 (외부 전송 금지, PRD-03 FR-13).
 - `.env`, 시크릿, `db_data/`의 실제 데이터를 `--add-dir` 대상에 넣지 마라.
 - `agy`에 `--dangerously-skip-permissions`를 붙이지 마라. 래퍼의 기본 모드를 쓴다.
+
+## 권한이 막혔을 때
+
+`a tool required the "X" permission` 에러가 나면 `~/.gemini/antigravity-cli/settings.json`의
+`permissions.allow`에 규칙이 빠진 것이다. **권한 종류는 4종뿐이다:**
+`command(...)` · `read_file(...)` · `write_file(...)` · `mcp(...)`.
+`edit_file`·`view_file`·`list_dir` 같은 도구 이름은 권한 종류가 아니다.
+
+**Claude는 이 파일을 쓸 수 없다.** 부모에게 빠진 규칙 이름을 보고하고 멈춰라.
