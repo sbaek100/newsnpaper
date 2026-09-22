@@ -2,7 +2,7 @@ import argparse
 import json
 import os
 import time
-import urllib.request
+import requests
 import feedparser
 import xml.etree.ElementTree as ET
 from pypdf import PdfReader
@@ -72,16 +72,17 @@ def fetch_papers(count=5):
     os.makedirs(PDF_DIR, exist_ok=True)
     
     while len(papers) < count:
-        url = f"http://export.arxiv.org/api/query?search_query=cat:cs.CR&sortBy=submittedDate&sortOrder=desc&start={start}&max_results={max_results}"
+        url = f"http://export.arxiv.org/api/query?search_query=cat:cs.CR&sortBy=submittedDate&sortOrder=descending&start={start}&max_results={max_results}"
         print(f"Fetching {url}")
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-            response = urllib.request.urlopen(req)
-            xml_data = response.read()
-            root = ET.fromstring(xml_data)
+            headers = {"User-Agent": "python-requests/2.25.1"}
+            response = requests.get(url, headers=headers, timeout=10)
+            response.raise_for_status()
+            root = ET.fromstring(response.content)
         except Exception as e:
             print(f"Failed to fetch arxiv: {e}")
             time.sleep(3)
+            start += max_results
             continue
             
         entries = root.findall("{http://www.w3.org/2005/Atom}entry")
@@ -107,9 +108,11 @@ def fetch_papers(count=5):
                 
             pdf_path = os.path.join(PDF_DIR, f"{arxiv_id}.pdf")
             try:
-                req = urllib.request.Request(pdf_url, headers={"User-Agent": "Mozilla/5.0"})
-                with urllib.request.urlopen(req) as response, open(pdf_path, "wb") as out_file:
-                    out_file.write(response.read())
+                print(f"Downloading {pdf_url}")
+                r = requests.get(pdf_url, headers=headers, timeout=30)
+                r.raise_for_status()
+                with open(pdf_path, "wb") as f:
+                    f.write(r.content)
             except Exception as e:
                 print(f"Failed to download pdf: {e}")
                 time.sleep(3)

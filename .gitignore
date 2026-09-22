@@ -30,4 +30,4 @@ backups/
 
 # 벤치마크 결과
 benchmarks/results/
-benchmarks/.venv/
+benchmarks/.venv*/
