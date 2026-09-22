@@ -27,3 +27,7 @@ backups/
 .idea/
 .DS_Store
 *.swp
+
+# 벤치마크 결과
+benchmarks/results/
+benchmarks/.venv/
