@@ -1,0 +1,29 @@
+# ── 시크릿 (PRD-02 §4) ──
+secrets/
+.env
+*.pem
+*.key
+
+# ── 데이터·산출물 ──
+db_data/
+node_modules/
+frontend/dist/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# ── 수집 산출물 ──
+papers_pdf/
+
+# ── 에이전트 로그 (프롬프트에 경로·구조가 남는다) ──
+plan/agy-log/
+
+# ── 백업 ──
+backups/
+
+# ── 편집기·OS ──
+.vscode/
+.idea/
+.DS_Store
+*.swp
