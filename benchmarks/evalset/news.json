@@ -1,0 +1,77 @@
+[
+  {
+    "id": "news-1",
+    "source_url": "https://www.bleepingcomputer.com/news/security/chinese-hackers-exploit-multiple-technologies-to-steal-govt-data/",
+    "text": "Title: Chinese hackers exploit WordPress, Zyxel flaws to steal govt data\n\nSummary: A Chinese-speaking threat actor has been exploiting vulnerabilities in ZyXEL GS1900 Smart Managed Switches and WordPress to steal sensitive data from 996 devices and more than 18,500 records stored in backend databases. [...]"
+  },
+  {
+    "id": "news-2",
+    "source_url": "https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/",
+    "text": "Title: ShinyHunters claims FBI hack, data theft in PeopleSoft zero-day breach\n\nSummary: The ShinyHunters extortion gang claims it breached FBI systems using a new Oracle PeopleSoft zero-day vulnerability, gaining access to internal services and stealing sensitive data on employees and job applicants. [...]"
+  },
+  {
+    "id": "news-3",
+    "source_url": "https://www.bleepingcomputer.com/news/security/new-closedquorum-windows-malware-uses-ai-for-attack-decisions/",
+    "text": "Title: New ClosedQuorum Windows malware uses AI for attack decisions\n\nSummary: A new Windows malware named ClosedQuorum uses Google Gemini, DeepSeek, Qwen, and Mistral AI models to autonomously determine the actions to take during post-compromise stages of an attack. [...]"
+  },
+  {
+    "id": "news-4",
+    "source_url": "https://www.bleepingcomputer.com/news/security/reducing-shadow-it-visibility-gaps-with-wazuh/",
+    "text": "Title: Reducing shadow IT visibility gaps with Wazuh\n\nSummary: Shadow IT can leave security teams unaware of unmanaged endpoints, unauthorized software, and other assets that fall outside existing monitoring. Wazuh explains how endpoint inventory, agentless monitoring, and centralized analysis can help organizations identify and reduce these visibility gaps. [...]"
+  },
+  {
+    "id": "news-5",
+    "source_url": "https://www.bleepingcomputer.com/news/security/check-point-patches-management-server-zero-day-exploited-in-attacks/",
+    "text": "Title: Check Point warns of Management Server zero-day exploited in attacks\n\nSummary: Check Point Software released emergency hotfixes to address a critical Security Management Server vulnerability that could let attackers run arbitrary scripts. [...]"
+  },
+  {
+    "id": "news-6",
+    "source_url": "https://www.bleepingcomputer.com/news/security/eviltokens-phaas-disrupted-after-compromising-12-000-microsoft-accounts/",
+    "text": "Title: EvilTokens PhaaS disrupted after compromising 12,000 Microsoft accounts\n\nSummary: The EvilTokens platform that compromised more than 12,000 Microsoft accounts at over 10,000 organizations has been disrupted in an effort led by Microsoft's Digital Crimes Unit (DCU). [...]"
+  },
+  {
+    "id": "news-7",
+    "source_url": "https://www.bleepingcomputer.com/news/security/webinar-tomorrow-inside-real-world-google-workspace-breaches/",
+    "text": "Title: Webinar tomorrow: Inside real-world Google Workspace breaches\n\nSummary: Tomorrow's webinar examines real Google Workspace breaches involving social engineering and malicious OAuth applications, from initial access through the critical first hours of incident response. Learn which security controls and response decisions can make the greatest difference. [...]"
+  },
+  {
+    "id": "news-8",
+    "source_url": "https://www.bleepingcomputer.com/news/security/d-link-warns-of-max-severity-zero-day-bug-in-dir-822a-routers/",
+    "text": "Title: D-Link warns of max severity zero-day bug in DIR-822A routers\n\nSummary: D-Link warned customers of a maximum-severity vulnerability (CVE-2026-86296) with public proof-of-concept (PoC) exploit code and no patch, affecting legacy DIR-822A dual-band Wi-Fi routers. [...]"
+  },
+  {
+    "id": "news-9",
+    "source_url": "https://www.bleepingcomputer.com/news/security/new-windows-defender-zero-day-blocks-microsoft-antivirus-updates/",
+    "text": "Title: New Windows Defender zero-day blocks Microsoft antivirus updates\n\nSummary: Over the weekend, security researcher Abdelhamid Naceri (also known as Nightmare Eclipse) released another Microsoft Defender zero-day exploit that blocks antivirus updates. [...]"
+  },
+  {
+    "id": "news-10",
+    "source_url": "https://www.bleepingcomputer.com/news/security/cisa-orders-feds-to-patch-actively-exploited-zyxel-flaw-by-thursday/",
+    "text": "Title: CISA orders feds to patch Zyxel flaw exploited for data theft\n\nSummary: ​Attackers are now actively exploiting a high-severity vulnerability in Zyxel GS1900 series switches, according to the U.S. Cybersecurity and Infrastructure Security Agency (CISA). [...]"
+  },
+  {
+    "id": "news-11",
+    "source_url": "https://www.bleepingcomputer.com/news/security/bigcommerce-alerts-merchants-of-data-breach-linked-to-ribon-apps/",
+    "text": "Title: BigCommerce alerts merchants of data breach linked to Ribon apps\n\nSummary: Ecommerce platform BigCommerce has alerted multiple merchants to data breaches after attackers compromised credentials for third-party Ribon applications and used them to inject malicious scripts into online stores. [...]"
+  },
+  {
+    "id": "news-12",
+    "source_url": "https://www.bleepingcomputer.com/news/security/cisa-alerts-of-active-exploitation-of-three-linux-kernel-flaws/",
+    "text": "Title: CISA alerts of active exploitation of three Linux kernel flaws\n\nSummary: The U.S. Cybersecurity and Infrastructure Security Agency (CISA) is warning that hackers are exploiting three Linux kernel vulnerabilities, one of them rated critical. [...]"
+  },
+  {
+    "id": "news-13",
+    "source_url": "https://www.bleepingcomputer.com/news/security/wordpress-click2shell-flaw-lets-hackers-execute-php-on-the-server/",
+    "text": "Title: WordPress Click2Shell flaw lets hackers execute PHP on the server\n\nSummary: Technical details and a proof-of-concept exploit have been published for a new WordPress cross-site request forgery (CSRF) vulnerability dubbed 'Click2Shell' that affects the platform's Core component. [...]"
+  },
+  {
+    "id": "news-14",
+    "source_url": "https://www.bleepingcomputer.com/news/microsoft/microsoft-to-retire-microsoft-365-companion-apps-in-december/",
+    "text": "Title: Microsoft to retire Microsoft 365 Companion apps in December\n\nSummary: Microsoft will retire the Calendar, People, and Files Microsoft 365 companion apps on December 16 and has asked admins to remove them from managed devices. [...]"
+  },
+  {
+    "id": "news-15",
+    "source_url": "https://www.bleepingcomputer.com/news/security/google-fined-403-million-over-location-data-privacy-violations/",
+    "text": "Title: Google fined €403 million over location data privacy violations\n\nSummary: Ireland's Data Protection Commission (DPC) has fined Google €403 million ($463M) for multiple GDPR violations related to processing users' location data. [...]"
+  }
+]
