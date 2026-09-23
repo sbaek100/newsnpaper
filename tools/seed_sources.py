@@ -13,13 +13,13 @@ from sqlalchemy import text  # noqa: E402
 from shared.db import engine  # noqa: E402
 
 SOURCES = [
+    # 보안뉴스는 RSS가 200을 주면서 항목 0개다(2026-09-23 실측) — 제외.
     # kind,  name,                 url,                                                      category
     ("rss", "BleepingComputer", "https://www.bleepingcomputer.com/feed/", "international"),
     ("rss", "The Hacker News", "https://feeds.feedburner.com/TheHackersNews", "international"),
     ("rss", "Krebs on Security", "https://krebsonsecurity.com/feed/", "international"),
     ("rss", "SecurityWeek", "https://www.securityweek.com/feed/", "international"),
     ("rss", "Dark Reading", "https://www.darkreading.com/rss.xml", "international"),
-    ("rss", "보안뉴스", "https://www.boannews.com/media/news_rss.xml", "domestic"),
     ("rss", "데일리시큐", "https://www.dailysecu.com/rss/allArticle.xml", "domestic"),
     ("api", "GDELT DOC", "https://api.gdeltproject.org/api/v2/doc/doc", "international"),
     ("api", "Naver News", "https://openapi.naver.com/v1/search/news.json", "domestic"),

@@ -6,3 +6,5 @@ httpx
 pydantic-settings
 apscheduler
 alembic
+pymupdf
+feedparser

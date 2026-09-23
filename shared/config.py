@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     translator_gpus_per_worker: int = 2
     
     collector_workers: int = 8
+
+    naver_client_id: str = ""
     
     # Secrets
     db_password: str = ""
