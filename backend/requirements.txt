@@ -5,3 +5,4 @@ asyncpg
 httpx
 pydantic-settings
 apscheduler
+alembic
