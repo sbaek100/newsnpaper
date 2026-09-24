@@ -6,6 +6,8 @@ import Main from "./pages/Main";
 import ListPage from "./pages/ListPage";
 import PaperDetail from "./pages/PaperDetail";
 import Login from "./pages/Login";
+import Verify from "./pages/Verify";
+import Resend from "./pages/Resend";
 import Feed from "./pages/Feed";
 import Admin from "./pages/Admin";
 import { Keywords, ChangePassword } from "./pages/Account";
@@ -36,6 +38,8 @@ function Shell() {
           <Route path="/papers/:id" element={<PaperDetail />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Login mode="signup" />} />
+          <Route path="/signup/resend" element={<Resend />} />
+          <Route path="/verify" element={<Verify />} />
           <Route path="/feed" element={<Private><Feed /></Private>} />
           <Route path="/account/keywords" element={<Private><Keywords /></Private>} />
           <Route path="/account/password" element={<Private><ChangePassword /></Private>} />

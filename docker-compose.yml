@@ -31,12 +31,14 @@ services:
       - DB_PASSWORD_FILE=/run/secrets/db_password
       - JWT_SECRET_FILE=/run/secrets/jwt_secret
       - NAVER_CLIENT_SECRET_FILE=/run/secrets/naver_client_secret
+      - SMTP_PASSWORD_FILE=/run/secrets/smtp_password
       - ADMIN_INITIAL_PASSWORD_FILE=/run/secrets/admin_initial_password
     secrets:
       - db_password
       - jwt_secret
       - naver_client_secret
       - admin_initial_password
+      - smtp_password
     command: ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
     networks:
       - secubrief
@@ -54,6 +56,7 @@ services:
       - DB_PASSWORD_FILE=/run/secrets/db_password
       - JWT_SECRET_FILE=/run/secrets/jwt_secret
       - NAVER_CLIENT_SECRET_FILE=/run/secrets/naver_client_secret
+      - SMTP_PASSWORD_FILE=/run/secrets/smtp_password
       - ADMIN_INITIAL_PASSWORD_FILE=/run/secrets/admin_initial_password
     secrets:
       - db_password
@@ -124,6 +127,8 @@ networks:
     name: secubrief
 
 secrets:
+  smtp_password:
+    file: ./secrets/smtp_password
   db_password:
     file: ./secrets/db_password
   jwt_secret:

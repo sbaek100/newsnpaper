@@ -1,16 +1,20 @@
 """인증·회원·관리자 엔드포인트 — PRD-01 §7"""
 
-from datetime import datetime, timezone
+import hashlib
+import secrets as pysecrets
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from shared.config import settings
 from shared.db import get_db
 from shared.logging import get_logger
 
 from . import auth as A
+from . import mailer
 from . import queries
 from .schemas import ListOut, to_card
 
@@ -42,32 +46,103 @@ class MeOut(BaseModel):
     mustChangePassword: bool
 
 
+
+
+VERIFY_TTL_H = 24  # FR-18
+
+
+def _status_message(status: str) -> str:
+    return {
+        "pending_email": "이메일 인증이 아직 끝나지 않았습니다. 메일의 링크를 눌러주세요.",
+        "pending_approval": "이메일 인증이 끝났습니다. 관리자 승인을 기다리는 중입니다.",
+        "rejected": "가입이 거부된 계정입니다. 관리자에게 문의하세요.",
+    }.get(status, "로그인할 수 없는 계정입니다.")
+
+
+async def _issue_verify_token(db, user_id: int) -> str:
+    """원본은 메일로만 나가고 DB 에는 해시만 둔다 (FR-18)."""
+    raw = pysecrets.token_urlsafe(32)
+    await db.execute(text(
+        "UPDATE email_tokens SET used_at = now()"
+        " WHERE user_id = :u AND purpose = 'verify' AND used_at IS NULL"), {"u": user_id})
+    await db.execute(text(
+        "INSERT INTO email_tokens (user_id, token_hash, purpose, expires_at)"
+        " VALUES (:u, :h, 'verify', :x)"),
+        {"u": user_id, "h": hashlib.sha256(raw.encode()).hexdigest(),
+         "x": datetime.now(timezone.utc) + timedelta(hours=VERIFY_TTL_H)})
+    return raw
+
+
 # ───────────────────────── 인증 ─────────────────────────
 
 
 @router.post("/auth/signup")
-async def signup(body: Credentials, resp: Response, db: AsyncSession = Depends(get_db)):
+async def signup(body: Credentials, db: AsyncSession = Depends(get_db)):
+    """가입 신청. 바로 로그인되지 않는다 — 이메일 인증 + 관리자 승인을 거친다 (FR-17)."""
     A.check_password_policy(body.password)
     dup = (await db.execute(text("SELECT 1 FROM users WHERE email = :e"),
                             {"e": body.email})).first()
     if dup:
-        raise HTTPException(409, "이미 가입된 이메일입니다")
+        raise HTTPException(409, "이미 가입 신청되었거나 사용 중인 이메일입니다")
 
     uid = (await db.execute(text(
-        "INSERT INTO users (email, password_hash, role) VALUES (:e, :p, 'member')"
-        " RETURNING id"
+        "INSERT INTO users (email, password_hash, role, status)"
+        " VALUES (:e, :p, 'member', 'pending_email') RETURNING id"
     ), {"e": body.email, "p": A.hash_password(body.password)})).scalar()
 
-    raw, h, exp = A.new_refresh()
-    await db.execute(text(
-        "INSERT INTO refresh_tokens (user_id, token_hash, expires_at)"
-        " VALUES (:u, :h, :x)"), {"u": uid, "h": h, "x": exp})
+    raw = await _issue_verify_token(db, uid)
     await db.commit()
 
-    A.set_refresh_cookie(resp, raw)
-    return {"accessToken": A.make_access(uid, "member"),
-            "user": {"id": uid, "email": body.email, "role": "member",
-                     "mustChangePassword": False}}
+    link = f"{settings.site_url}/verify?token={raw}"
+    subject, text_body = mailer.verify_mail(link)
+    sent = await mailer.send(body.email, subject, text_body)
+
+    # FR-24 — 메일이 안 나가도 가입은 성공시킨다. 재발송으로 복구한다.
+    return {"status": "pending_email", "mailSent": sent,
+            "message": "인증 메일을 보냈습니다. 메일의 링크를 눌러주세요."
+                       if sent else
+                       "가입 신청은 접수됐으나 메일 발송에 실패했습니다. 재발송하거나 관리자에게 문의하세요."}
+
+
+@router.post("/auth/resend")
+async def resend_verify(body: Credentials, db: AsyncSession = Depends(get_db)):
+    """인증 메일 재발송 (FR-22). 비밀번호를 확인해 타인의 재발송을 막는다."""
+    r = (await db.execute(text(
+        "SELECT id, password_hash, status FROM users WHERE email = :e"),
+        {"e": body.email})).first()
+    # 계정 존재 여부를 알려주지 않는다
+    if not r or not A.verify_password(r.password_hash, body.password) \
+            or r.status != "pending_email":
+        return {"ok": True}
+
+    raw = await _issue_verify_token(db, r.id)
+    await db.commit()
+    subject, text_body = mailer.verify_mail(f"{settings.site_url}/verify?token={raw}")
+    await mailer.send(body.email, subject, text_body)
+    return {"ok": True}
+
+
+@router.post("/auth/verify")
+async def verify_email(token: str, db: AsyncSession = Depends(get_db)):
+    """인증 링크 처리 → pending_approval (FR-19)."""
+    r = (await db.execute(text("""
+        SELECT t.id, t.user_id, u.status FROM email_tokens t
+          JOIN users u ON u.id = t.user_id
+         WHERE t.token_hash = :h AND t.purpose = 'verify'
+           AND t.used_at IS NULL AND t.expires_at > now()
+    """), {"h": hashlib.sha256(token.encode()).hexdigest()})).first()
+    if not r:
+        raise HTTPException(400, "유효하지 않거나 만료된 링크입니다. 인증 메일을 다시 받아주세요")
+
+    await db.execute(text("UPDATE email_tokens SET used_at = now() WHERE id = :i"),
+                     {"i": r.id})
+    if r.status == "pending_email":
+        await db.execute(text(
+            "UPDATE users SET status = 'pending_approval', email_verified_at = now()"
+            " WHERE id = :i"), {"i": r.user_id})
+    await db.commit()
+    return {"status": "pending_approval",
+            "message": "이메일 인증이 끝났습니다. 관리자 승인 후 로그인할 수 있습니다."}
 
 
 @router.post("/auth/login")
@@ -76,12 +151,17 @@ async def login(body: Credentials, resp: Response, db: AsyncSession = Depends(ge
         raise HTTPException(429, "로그인 시도가 너무 많습니다. 10분 후 다시 시도하세요")
 
     r = (await db.execute(text(
-        "SELECT id, password_hash, role, must_change_password FROM users WHERE email = :e"
+        "SELECT id, password_hash, role, must_change_password, status"
+        " FROM users WHERE email = :e"
     ), {"e": body.email})).first()
 
     if not r or not A.verify_password(r.password_hash, body.password):
         A.note_login_fail(body.email)
         raise HTTPException(401, "이메일 또는 비밀번호가 올바르지 않습니다")
+
+    # FR-21 — active 가 아니면 현재 상태를 알려준다
+    if r.status != "active":
+        raise HTTPException(403, _status_message(r.status))
 
     A.clear_login_fails(body.email)
     raw, h, exp = A.new_refresh()
@@ -265,3 +345,50 @@ async def admin_retry(_: dict = Depends(A.admin_user), db: AsyncSession = Depend
         " WHERE status='failed'"))).rowcount
     await db.commit()
     return {"requeued": n}
+
+
+# ───────────────────── 관리자: 가입 승인 (FR-20) ─────────────────────
+
+
+@router.get("/admin/signups")
+async def admin_signups(_: dict = Depends(A.admin_user), db: AsyncSession = Depends(get_db)):
+    rows = (await db.execute(text("""
+        SELECT id, email, status, created_at, email_verified_at
+          FROM users
+         WHERE status IN ('pending_email','pending_approval','rejected')
+         ORDER BY created_at DESC
+    """))).all()
+    return {"signups": [dict(r._mapping) for r in rows]}
+
+
+@router.post("/admin/signups/{user_id}/approve")
+async def admin_approve(user_id: int, _: dict = Depends(A.admin_user),
+                        db: AsyncSession = Depends(get_db)):
+    r = (await db.execute(text("""
+        UPDATE users SET status = 'active'
+         WHERE id = :i AND status IN ('pending_approval','rejected')
+         RETURNING email
+    """), {"i": user_id})).first()
+    if not r:
+        raise HTTPException(400, "이메일 인증을 마친 신청만 승인할 수 있습니다")
+    await db.commit()
+
+    subject, body = mailer.approved_mail(settings.site_url)
+    await mailer.send(r.email, subject, body)
+    return {"ok": True, "status": "active"}
+
+
+@router.post("/admin/signups/{user_id}/reject")
+async def admin_reject(user_id: int, _: dict = Depends(A.admin_user),
+                       db: AsyncSession = Depends(get_db)):
+    r = (await db.execute(text(
+        "UPDATE users SET status = 'rejected' WHERE id = :i AND role <> 'admin'"
+        " RETURNING id"), {"i": user_id})).first()
+    if not r:
+        raise HTTPException(400, "거부할 수 없는 계정입니다")
+    # 거부하면 기존 세션을 끊는다
+    await db.execute(text(
+        "UPDATE refresh_tokens SET revoked_at = now()"
+        " WHERE user_id = :i AND revoked_at IS NULL"), {"i": user_id})
+    await db.commit()
+    return {"ok": True, "status": "rejected"}

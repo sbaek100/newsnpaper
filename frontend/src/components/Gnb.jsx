@@ -25,7 +25,7 @@ export function Gnb() {
           ) : (
             <>
               <NavLink className="btn" to="/login">로그인</NavLink>
-              <NavLink className="btn btn--primary gnb-signup" to="/signup">회원가입</NavLink>
+              <NavLink className="btn btn--primary gnb-signup" to="/signup">가입 신청</NavLink>
             </>
           )}
         </div>

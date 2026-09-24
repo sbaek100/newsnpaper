@@ -38,10 +38,18 @@ export function AuthProvider({ children }) {
     accessToken = d.accessToken; setUser(d.user); return d.user;
   }, []);
 
-  const signup = useCallback(async (email, password) => {
-    const d = await call("/auth/signup", { method: "POST", body: { email, password } });
-    accessToken = d.accessToken; setUser(d.user); return d.user;
-  }, []);
+  // 가입은 바로 로그인되지 않는다 — 이메일 인증 + 관리자 승인을 거친다 (PRD-01 §5.1)
+  const signup = useCallback(
+    (email, password) => call("/auth/signup", { method: "POST", body: { email, password } }),
+    []);
+
+  const resend = useCallback(
+    (email, password) => call("/auth/resend", { method: "POST", body: { email, password } }),
+    []);
+
+  const verify = useCallback(
+    (token) => call(`/auth/verify?token=${encodeURIComponent(token)}`, { method: "POST" }),
+    []);
 
   const logout = useCallback(async () => {
     await call("/auth/logout", { method: "POST" }).catch(() => {});
@@ -63,7 +71,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <Ctx.Provider value={{ user, setUser, ready, login, signup, logout, authed }}>
+    <Ctx.Provider value={{ user, setUser, ready, login, signup, resend, verify, logout, authed }}>
       {children}
     </Ctx.Provider>
   );

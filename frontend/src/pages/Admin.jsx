@@ -8,10 +8,16 @@ export default function Admin() {
   const [d, setD] = useState(null);
   const [err, setErr] = useState(null);
 
-  const load = () => Promise.all([authed("/admin/sources"), authed("/admin/batches")])
-    .then(([s, b]) => setD({ ...s, ...b })).catch((e) => setErr(e.message));
+  const load = () => Promise.all([
+    authed("/admin/sources"), authed("/admin/batches"), authed("/admin/signups"),
+  ]).then(([s, b, g]) => setD({ ...s, ...b, ...g })).catch((e) => setErr(e.message));
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [authed]);
+
+  async function act(id, what) {
+    await authed(`/admin/signups/${id}/${what}`, { method: "POST" });
+    load();
+  }
 
   async function toggle(id, enabled) {
     await authed(`/admin/sources/${id}?enabled=${!enabled}`, { method: "PUT" });
@@ -24,6 +30,45 @@ export default function Admin() {
   return (
     <div className="container section">
       <h1 className="t-h1" style={{ marginTop: 0 }}>관리</h1>
+
+      {/* 가입 승인 — PRD-01 FR-20 */}
+      <h2 className="t-h2">
+        가입 신청
+        {d.signups.filter((x) => x.status === "pending_approval").length > 0 && (
+          <span className="badge badge--warn" style={{ marginLeft: 8 }}>
+            승인 대기 {d.signups.filter((x) => x.status === "pending_approval").length}
+          </span>
+        )}
+      </h2>
+      <div className="list" style={{ marginBottom: 40 }}>
+        {!d.signups.length && <p className="t-meta" style={{ color: "var(--text-disabled)" }}>
+          대기 중인 신청이 없습니다.</p>}
+        {d.signups.map((u) => (
+          <div key={u.id} className="row" style={{ alignItems: "center" }}>
+            <div className="row-body" style={{ flex: 1 }}>
+              <div className="badges">
+                <span className={`badge badge--${
+                  u.status === "pending_approval" ? "warn"
+                  : u.status === "rejected" ? "danger" : "news"}`}>
+                  {u.status === "pending_email" ? "이메일 인증 대기"
+                   : u.status === "pending_approval" ? "승인 대기" : "거부됨"}
+                </span>
+                <span className="t-meta">{fmtDate(u.created_at)}</span>
+              </div>
+              <strong>{u.email}</strong>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              {u.status !== "pending_email" && (
+                <button className="btn btn--primary"
+                        onClick={() => act(u.id, "approve")}>승인</button>
+              )}
+              {u.status !== "rejected" && (
+                <button className="btn" onClick={() => act(u.id, "reject")}>거부</button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
 
       <h2 className="t-h2">수집 소스 ({d.sources.length})</h2>
       <div className="list" style={{ marginBottom: 40 }}>

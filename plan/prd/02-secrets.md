@@ -31,6 +31,7 @@ mypage/
 │   ├── db_password
 │   ├── jwt_secret
 │   ├── naver_client_secret
+│   ├── smtp_password
 │   └── admin_initial_password
 └── docker-compose.yml   # secrets: 블록으로 컨테이너에 파일 마운트
 ```
@@ -125,6 +126,7 @@ plan/agy-log/
 | `api.gdeltproject.org` | 국제 뉴스 (PRD-03 §4.1) |
 | `openapi.naver.com` | 국내 뉴스 |
 | 등록된 RSS 피드 호스트 | PRD-03 §4.1의 매체 목록 |
+| SMTP 서버 | 가입 인증 메일 발송 (PRD-01 §5, 2026-09-24 추가) |
 
 | ID | 요구사항 | 우선순위 |
 |---|---|---|

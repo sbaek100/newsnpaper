@@ -32,6 +32,15 @@ class Settings(BaseSettings):
     collector_workers: int = 8
 
     naver_client_id: str = ""
+
+    # SMTP — 가입 인증 메일 (PRD-01 FR-23)
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_from: str = ""
+    smtp_password: str = ""
+    smtp_password_file: str = ""
+    site_url: str = "http://localhost:8080"
     
     # Secrets
     db_password: str = ""
@@ -64,6 +73,9 @@ class Settings(BaseSettings):
         if self.naver_client_secret_file:
             self.naver_client_secret = read_secret(self.naver_client_secret_file, "naver_client_secret")
         
+        if self.smtp_password_file:
+            self.smtp_password = read_secret(self.smtp_password_file, "smtp_password")
+
         if self.admin_initial_password_file:
             self.admin_initial_password = read_secret(self.admin_initial_password_file, "admin_initial_password")
 
