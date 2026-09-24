@@ -1,36 +1,30 @@
-# ── 시크릿 (PRD-02 §4) ──
-secrets/
-.env
-*.pem
-*.key
-
-# ── 데이터·산출물 ──
-db_data/
-node_modules/
-frontend/dist/
-__pycache__/
-*.pyc
-.venv/
-venv/
-
-# ── 수집 산출물 ──
-papers_pdf/
-
-# ── 에이전트 임시 파일 ──
-scratch/
-
-# ── 에이전트 로그 (프롬프트에 경로·구조가 남는다) ──
-plan/agy-log/
-
-# ── 백업 ──
-backups/
-
-# ── 편집기·OS ──
-.vscode/
-.idea/
-.DS_Store
-*.swp
 
 # 벤치마크 결과
+# ── 에이전트 임시 파일 ──
+# ── 에이전트 로그 (프롬프트에 경로·구조가 남는다) ──
+# ── 데이터·산출물 ──
+# ── 수집 산출물 ──
+# ── 백업 ──
+backups/
 benchmarks/results/
 benchmarks/.venv*/
+db_data/
+.DS_Store
+.env
+frontend/dist/
+.idea/
+*.key
+node_modules/
+# ── 편집기·OS ──
+papers_pdf/
+*.pem
+plan/agy-log/
+# ── 시크릿 (PRD-02 §4) ──
+*.pyc
+__pycache__/
+scratch/
+secrets/
+*.swp
+.venv/
+venv/
+.vscode/

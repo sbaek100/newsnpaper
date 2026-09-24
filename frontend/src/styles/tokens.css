@@ -1,0 +1,101 @@
+/* 디자인 토큰 — plan/design-system.md 를 그대로 옮긴 것.
+   🔴 여기 있는 값만 쓴다. 컴포넌트에 hex 를 직접 쓰지 마라. */
+
+@font-face { font-family: Pretendard; font-weight: 400; font-display: swap;
+  src: url('/fonts/Pretendard-400.woff2') format('woff2'); }
+@font-face { font-family: Pretendard; font-weight: 500; font-display: swap;
+  src: url('/fonts/Pretendard-500.woff2') format('woff2'); }
+@font-face { font-family: Pretendard; font-weight: 600; font-display: swap;
+  src: url('/fonts/Pretendard-600.woff2') format('woff2'); }
+@font-face { font-family: Pretendard; font-weight: 700; font-display: swap;
+  src: url('/fonts/Pretendard-700.woff2') format('woff2'); }
+@font-face { font-family: Pretendard; font-weight: 800; font-display: swap;
+  src: url('/fonts/Pretendard-800.woff2') format('woff2'); }
+
+:root {
+  /* 면 · 보더 (§2.1) */
+  --bg: #FFFFFF;
+  --bg-subtle: #F9FAFB;
+  --bg-hover: #F2F4F6;
+  --border: #E5E8EB;
+  --border-strong: #D1D6DB;
+
+  /* 텍스트 — 전부 AA 4.5:1 통과값 (§2.2) */
+  --text: #191F28;            /* 15.8:1 */
+  --text-secondary: #4E5968;  /* 7.6:1 */
+  --text-tertiary: #6B7684;   /* 4.9:1 */
+  --text-disabled: #8B95A1;   /* 2.9:1 — 정보 전달 금지 */
+  --text-inverse: #FFFFFF;
+
+  /* 포인트 (§2.3) */
+  --point: #3182F6;
+  --point-weak: #E8F3FF;
+  --paper: #15C47E;
+  --paper-weak: #E5F8F0;
+  --warn: #FF9500;
+  --warn-weak: #FFF4E5;
+  --danger: #F04452;
+  --danger-weak: #FEECEE;
+  --highlight: #FFF3C4;
+
+  /* 스페이싱 4pt (§4.1) */
+  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px; --s5: 20px;
+  --s6: 24px; --s8: 32px; --s10: 40px; --s12: 48px; --s16: 64px; --s20: 80px;
+
+  /* 컴포넌트 (§5) */
+  --r-card: 16px;
+  --r-input: 12px;
+  --r-button: 12px;
+  --r-badge: 6px;
+  --shadow-card: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
+  --shadow-card-hover: 0 2px 6px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.08);
+  --focus-ring: 0 0 0 3px rgba(49,130,246,.35);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --ease: cubic-bezier(.4,0,.2,1);
+
+  --container: 1200px;
+}
+
+/* 다크 모드는 1차 미지원 (§2.4).
+   토큰을 CSS 변수로 선언해 두었으므로 나중에 이 블록만 채우면 된다.
+:root[data-theme="dark"] { --bg: ...; } */
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Pretendard, system-ui, -apple-system, 'Apple SD Gothic Neo',
+               'Malgun Gothic', sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+button { font: inherit; }
+
+:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: 6px; }
+
+/* 타이포 스케일 (§3.2) */
+.t-display   { font-size: 40px; line-height: 1.25; font-weight: 800; letter-spacing: -0.03em; }
+.t-h1        { font-size: 28px; line-height: 1.35; font-weight: 700; letter-spacing: -0.02em; }
+.t-h2        { font-size: 22px; line-height: 1.4;  font-weight: 700; letter-spacing: -0.02em; }
+.t-card      { font-size: 17px; line-height: 1.45; font-weight: 600; letter-spacing: -0.02em; }
+.t-body      { font-size: 15px; line-height: 1.6;  font-weight: 400; }
+.t-reading   { font-size: 17px; line-height: 1.75; font-weight: 400; max-width: 68ch; }
+.t-meta      { font-size: 13px; line-height: 1.5;  font-weight: 500; }
+.t-caption   { font-size: 12px; line-height: 1.4;  font-weight: 600; }
+
+@media (max-width: 767px) {
+  .t-display { font-size: 28px; line-height: 1.3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
