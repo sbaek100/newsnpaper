@@ -8,3 +8,6 @@ apscheduler
 alembic
 pymupdf
 feedparser
+argon2-cffi
+pyjwt
+email-validator

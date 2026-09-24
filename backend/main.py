@@ -12,12 +12,15 @@ from shared.db import get_db
 from shared.logging import get_logger
 
 from . import queries
+from .routes_auth import router as auth_router
 from .schemas import ListOut, MainOut, PaperOut, SectionOut, to_card
 
 logger = get_logger("backend")
 app = FastAPI(title="secubrief API", docs_url="/docs")
 
 logger.info("Backend starting", {"config": settings.safe_dump()})
+
+app.include_router(auth_router)
 
 MAIN_NEWS = 9  # PRD-04 §8
 MAIN_PAPERS = 6
