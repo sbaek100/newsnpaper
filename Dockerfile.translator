@@ -1,20 +1,20 @@
+# 🔴 CUDA 12.1 고정. 13.x 는 Pascal(sm_61) 지원이 삭제돼 GPU 8장이 전부 죽는다.
 FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
 
-# Set non-interactive to avoid timezone prompts during apt
-ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBIAN_FRONTEND=noninteractive PYTHONUNBUFFERED=1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    python3-pip \
-    && rm -rf /var/lib/apt/lists/*
+    python3 python3-pip \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -sf /usr/bin/python3 /usr/bin/python
 
 WORKDIR /app
 
-# Setup Python alias
-RUN ln -s /usr/bin/python3 /usr/bin/python
-
+# torch 2.6.0+cu124 — 호스트에서 이미 Pascal(sm_61) 동작이 검증된 조합이다.
+# CUDA 12.x 는 Pascal 을 지원한다. 13.x 로 올리지 마라.
+RUN pip3 install --no-cache-dir torch==2.6.0
 COPY translator/requirements.txt /app/
-RUN pip3 install --no-cache-dir -r requirements.txt --index-url https://download.pytorch.org/whl/cu121
+RUN pip3 install --no-cache-dir -r requirements.txt
 
 COPY translator/ /app/translator/
 COPY shared/ /app/shared/

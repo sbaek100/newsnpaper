@@ -56,16 +56,21 @@ class Settings(BaseSettings):
         elif not self.db_password:
             raise ValueError("db_password or db_password_file must be provided")
 
+        # jwt_secret 은 backend 만 필요하다. collector/translator 는 없어도 뜬다.
+        # 실제 필요 시점(토큰 발급/검증)에 require_jwt_secret() 으로 검사한다.
         if self.jwt_secret_file:
             self.jwt_secret = read_secret(self.jwt_secret_file, "jwt_secret")
-        elif not self.jwt_secret:
-            raise ValueError("jwt_secret or jwt_secret_file must be provided")
 
         if self.naver_client_secret_file:
             self.naver_client_secret = read_secret(self.naver_client_secret_file, "naver_client_secret")
         
         if self.admin_initial_password_file:
             self.admin_initial_password = read_secret(self.admin_initial_password_file, "admin_initial_password")
+
+    def require_jwt_secret(self) -> str:
+        if not self.jwt_secret:
+            raise RuntimeError("jwt_secret 이 없다. secrets/jwt_secret 을 확인하라")
+        return self.jwt_secret
 
     def safe_dump(self):
         return mask_dict(self.model_dump())

@@ -1,0 +1,204 @@
+{
+  "glossary": [
+    {
+      "en": "ransomware",
+      "ko": "랜섬웨어",
+      "type": "transliteration"
+    },
+    {
+      "en": "supply chain attack",
+      "ko": "공급망 공격",
+      "type": "translation"
+    },
+    {
+      "en": "zero-day",
+      "ko": "제로데이",
+      "type": "transliteration"
+    },
+    {
+      "en": "malware",
+      "ko": "악성코드",
+      "type": "translation"
+    },
+    {
+      "en": "phishing",
+      "ko": "피싱",
+      "type": "transliteration"
+    },
+    {
+      "en": "vulnerability",
+      "ko": "취약점",
+      "type": "translation"
+    },
+    {
+      "en": "exploitation",
+      "ko": "익스플로잇",
+      "type": "transliteration"
+    },
+    {
+      "en": "authentication",
+      "ko": "인증",
+      "type": "translation"
+    },
+    {
+      "en": "authorization",
+      "ko": "인가",
+      "type": "translation"
+    },
+    {
+      "en": "encryption",
+      "ko": "암호화",
+      "type": "translation"
+    },
+    {
+      "en": "decryption",
+      "ko": "복호화",
+      "type": "translation"
+    },
+    {
+      "en": "botnet",
+      "ko": "봇넷",
+      "type": "transliteration"
+    },
+    {
+      "en": "denial of service",
+      "ko": "서비스 거부",
+      "type": "translation"
+    },
+    {
+      "en": "distributed denial of service",
+      "ko": "분산 서비스 거부",
+      "type": "translation"
+    },
+    {
+      "en": "DDoS",
+      "ko": "디도스",
+      "type": "transliteration"
+    },
+    {
+      "en": "threat intelligence",
+      "ko": "위협 인텔리전스",
+      "type": "translation"
+    },
+    {
+      "en": "incident response",
+      "ko": "침해 사고 대응",
+      "type": "translation"
+    },
+    {
+      "en": "penetration testing",
+      "ko": "모의 해킹",
+      "type": "translation"
+    },
+    {
+      "en": "firewall",
+      "ko": "방화벽",
+      "type": "translation"
+    },
+    {
+      "en": "intrusion detection system",
+      "ko": "침입 탐지 시스템",
+      "type": "translation"
+    },
+    {
+      "en": "intrusion prevention system",
+      "ko": "침입 방지 시스템",
+      "type": "translation"
+    },
+    {
+      "en": "endpoint detection and response",
+      "ko": "엔드포인트 탐지 및 대응",
+      "type": "translation"
+    },
+    {
+      "en": "EDR",
+      "ko": "EDR",
+      "type": "transliteration"
+    },
+    {
+      "en": "multi-factor authentication",
+      "ko": "다중 인증",
+      "type": "translation"
+    },
+    {
+      "en": "MFA",
+      "ko": "다중 인증",
+      "type": "translation"
+    },
+    {
+      "en": "social engineering",
+      "ko": "사회공학",
+      "type": "translation"
+    },
+    {
+      "en": "backdoor",
+      "ko": "백도어",
+      "type": "transliteration"
+    },
+    {
+      "en": "rootkit",
+      "ko": "루트킷",
+      "type": "transliteration"
+    },
+    {
+      "en": "trojan",
+      "ko": "트로이 목마",
+      "type": "translation"
+    },
+    {
+      "en": "keylogger",
+      "ko": "키로거",
+      "type": "transliteration"
+    },
+    {
+      "en": "white-box",
+      "ko": "화이트박스",
+      "type": "transliteration"
+    },
+    {
+      "en": "black-box",
+      "ko": "블랙박스",
+      "type": "transliteration"
+    },
+    {
+      "en": "jailbreak",
+      "ko": "탈옥",
+      "type": "translation"
+    },
+    {
+      "en": "retire",
+      "ko": "지원 종료",
+      "type": "translation"
+    },
+    {
+      "en": "perturbation",
+      "ko": "섭동",
+      "type": "translation"
+    },
+    {
+      "en": "proof-of-concept",
+      "ko": "개념 증명 (PoC)",
+      "type": "translation"
+    },
+    {
+      "en": "held-out",
+      "ko": "보류",
+      "type": "translation"
+    },
+    {
+      "en": "extortion gang",
+      "ko": "갈취 조직",
+      "type": "translation"
+    },
+    {
+      "en": "agentless",
+      "ko": "에이전트리스",
+      "type": "transliteration"
+    },
+    {
+      "en": "shadow IT",
+      "ko": "섀도 IT",
+      "type": "transliteration"
+    }
+  ]
+}

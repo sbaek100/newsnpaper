@@ -1,2 +1,7 @@
-torch
+# torch 는 CUDA 베이스 이미지에서 설치한다 (Dockerfile.translator)
+transformers
+accelerate
+sentencepiece
+sqlalchemy
+asyncpg
 pydantic-settings

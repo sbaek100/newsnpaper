@@ -101,8 +101,13 @@ services:
       - DB_PASSWORD_FILE=/run/secrets/db_password
       - OMP_NUM_THREADS=2
       - MKL_NUM_THREADS=2
+      - HF_HOME=/root/.cache/huggingface
+      - TRANSLATOR_MODEL=${TRANSLATOR_MODEL:-beomi/EXAONE-3.5-7.8B-Instruct-Llamafied}
     secrets:
       - db_password
+    volumes:
+      # HF 가중치 캐시. 없으면 배치마다 16GB 를 다시 받는다.
+      - ${HOME}/.cache/huggingface:/root/.cache/huggingface
     command: ["python", "-m", "translator.main"]
     networks:
       - secubrief
