@@ -23,7 +23,10 @@ export function Gnb() {
           {user ? (
             <button className="btn" onClick={() => logout().then(() => nav("/"))}>로그아웃</button>
           ) : (
-            <NavLink className="btn" to="/login">로그인</NavLink>
+            <>
+              <NavLink className="btn" to="/login">로그인</NavLink>
+              <NavLink className="btn btn--primary gnb-signup" to="/signup">회원가입</NavLink>
+            </>
           )}
         </div>
       </div>

@@ -128,3 +128,17 @@ mark { background: var(--highlight); color: var(--text); }
   background: var(--bg); color: var(--text); font-size: 15px; outline: none; }
 .input:focus { border-color: var(--point); box-shadow: var(--focus-ring); }
 label.t-meta { display: block; color: var(--text-secondary); font-weight: 500; }
+
+/* ── 인증 화면 ── */
+.auth-page { max-width: 420px; }
+.hint { display: block; margin-top: 6px; font-size: 12px; line-height: 1.5;
+  color: var(--text-tertiary); font-weight: 400; }
+.hint--bad { color: var(--danger); }
+.auth-alt { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);
+  text-align: center; }
+.auth-alt p { margin: 0; font-size: 14px; color: var(--text-secondary); }
+.auth-alt a { color: var(--point); font-weight: 600; }
+.auth-note { margin-top: 20px; color: var(--text-tertiary); }
+.auth-note p { margin: 0 0 4px; }
+/* 좁은 화면에서는 GNB 회원가입 버튼을 숨긴다 — 로그인 페이지에서 갈 수 있다 */
+@media (max-width: 519px) { .gnb-signup { display: none; } }
